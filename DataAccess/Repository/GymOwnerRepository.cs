@@ -1,6 +1,7 @@
 ﻿using GymMembershipAPI.DataAccess.DataContext;
 using GymMembershipAPI.DataAccess.Interface;
 using GymMembershipAPI.Domain;
+using GymMembershipAPI.DTO.GymMember;
 using GymMembershipAPI.DTO.GymOwner;
 using GymMembershipAPI.Service;
 using Microsoft.EntityFrameworkCore;
@@ -88,26 +89,22 @@ namespace GymMembershipAPI.DataAccess.Repository
             return response;
         }
 
-        public async Task<ResponseModel<string>> DepositMoney(DepositMoneyDTO deposit)
+        public async Task<ResponseModel<string>> DepositMoney(FundAccountDTO deposit)
         {
             var response = new ResponseModel<string>();
             try
             {
-                var checkuser = await _ctx.Users.FirstOrDefaultAsync(x=>x.AccountNumber == deposit.AccountNumber);
-                if(checkuser == null)
+                var checkOwner = await _ctx.GymOwner.FirstOrDefaultAsync(x => x.Id == deposit.Id);
+                if(checkOwner == null)
                 {
-                    response = response.FailedResult("Invalid Account,pls check");
+                    response = response.FailedResult("Gym Owner does not exist");
                 }
-                else
-                {
-                    checkuser.AccountBalance += deposit.Amount;
+                var gymOwnerUser = await _ctx.Users.FirstOrDefaultAsync(x => x.Email == checkOwner.Email);
+                gymOwnerUser.AccountBalance += deposit.Amount;
+                _ctx.Users.Update(gymOwnerUser);
+                await _ctx.SaveChangesAsync();
+                response = response.SuccessResult($"Dear {checkOwner.Name} you have successfully deposited {deposit.Amount} to your account.\nBalance : #{gymOwnerUser.AccountBalance}");
 
-                    _ctx.Users.Update(checkuser);
-                    await _ctx.SaveChangesAsync();
-                    response = response.SuccessResult($"Deposit Successfull.\nAmount transfered #{deposit.Amount}.\nPresent Balance #{checkuser.AccountBalance}");
-
-
-                }
             }
             catch
             {
@@ -164,26 +161,42 @@ namespace GymMembershipAPI.DataAccess.Repository
             var response = new ResponseModel<string>();
             try
             {
-                var sender = await _ctx.Users.FirstOrDefaultAsync(x => x.AccountNumber == _pay.SenderAccount);
-                var reciever = await _ctx.Users.FirstOrDefaultAsync(x => x.AccountNumber == _pay.RecieverAccount);
-                if(sender  == null || reciever == null)
+                var checkGymOwner = await _ctx.GymOwner.FirstOrDefaultAsync(x => x.Id == _pay.GymOwnerId);
+                var checkSuperAdmin = await _ctx.GymSuperAdmins.FirstOrDefaultAsync(x => x.Id == _pay.GymSuperAdminId);
+                if( checkSuperAdmin == null || checkGymOwner == null)
                 {
-                    response = response.FailedResult("Account number is incorrect, pls check");
-                }
-                else if(sender.AccountBalance < _pay.Amount)
-                {
-                    response = response.FailedResult("Insufficient fund, pls fund your wallet");
+                    response = response.FailedResult("Gym Owner Id or GymSuper Id does not exist");
                 }
                 else
                 {
-                    sender.AccountBalance -=  _pay.Amount;
-                    reciever.AccountBalance += _pay.Amount;
+                    var savepayment = new Payment()
+                    {
+                        GymOwerId = checkGymOwner.Id,
+                        GymOwner = checkGymOwner,
+                        GymSuperAdminId = checkSuperAdmin.Id,
+                        GymSuperAdmin = checkSuperAdmin,
+                        Amount = _pay.Amount,
+                        Description = _pay.Description,
 
-                    _ctx.Users.Update(sender);
-                    _ctx.Users.Update(reciever);
-                    await _ctx.SaveChangesAsync();
 
-                    response = response.SuccessResult($"Hello {sender.Name}, You have successfully transfered {_pay.Amount} to {reciever.Name}");
+                    };
+                    await _ctx.Payment.AddAsync(savepayment);
+                   var res =  await _ctx.SaveChangesAsync();
+                    if(res > 0)
+                    {
+                        var SuperUser = await _ctx.Users.FirstOrDefaultAsync(x => x.Email == checkSuperAdmin.Email);
+                        var OwnerUser = await _ctx.Users.FirstOrDefaultAsync(x => x.Email == checkGymOwner.Email);
+
+                        OwnerUser.AccountBalance -= _pay.Amount;
+                        SuperUser.AccountBalance += _pay.Amount;
+
+                        _ctx.Users.Update(OwnerUser);
+                        _ctx.Users.Update(SuperUser);
+                        await _ctx.SaveChangesAsync();
+
+                        response = response.SuccessResult($"Dear {checkGymOwner.Name} you have successfully transferred {_pay.Amount} to your SuperAdmin");
+                    }
+
                 }
                 
             }

@@ -26,6 +26,9 @@ builder.Services.AddDbContext<ApplicationContext>(options =>
 builder.Services.AddTransient<IEmailService,EmailServiceRepository>(); //Mail D.I
 builder.Services.AddScoped<IRegister_Login, Register_LoginRepository>(); //Logs D.I
 builder.Services.AddScoped<ISuperAdminRepository,SuperAdminRepository>();// SuperAdmin D.I
+builder.Services.AddScoped<IGymOwnerRepository, GymOwnerRepository>(); // GymOwner D.I
+
+
 builder.Services.Configure<Setup>(builder.Configuration.GetSection("Setup"));
 
 //Configure Authrntication

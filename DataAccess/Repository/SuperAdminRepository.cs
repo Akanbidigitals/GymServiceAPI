@@ -102,16 +102,22 @@ namespace GymMembershipAPI.DataAccess.Repository
             return response;
         }
 
-        public async Task<Payment> VeiwAllPaymentsbyGymOwner(string email)
+        public async Task<List<Payment>> VeiwAllPaymentsbyGymOwner(Guid Id)
         {
-            var gymownerActt = await _ctx.GymOwner.FirstOrDefaultAsync(x => x.Email == email);
-            var getuserAcct = await _ctx.Users.FirstOrDefaultAsync(x=>x.Email == email);
+            try
+            {
+                var checkId = await _ctx.GymOwner.FirstOrDefaultAsync(x=>x.Id == Id);
+                if(checkId == null)
+                {
+                    throw new Exception("Gym Owner Id does not exist");
+                }
+                var memberUser = await _ctx.Payment.Where(x => x.GymOwner == checkId).ToListAsync();
+                return memberUser;
 
-            var paymentcheck = await _ctx.Payment.FirstOrDefaultAsync(x => x.SenderAccount == getuserAcct.AccountNumber);
-
-            
-
-            return paymentcheck;
+            }catch(Exception ex)
+            {
+                throw new Exception(ex.Message);
+            }
 
            
         }

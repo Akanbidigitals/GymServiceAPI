@@ -10,6 +10,9 @@ namespace GymMembershipAPI.DataAccess.Interfaces
         Task<ResponseModel<string>> RegistGymOwners(RegisterGymOwner user);
         Task<ResponseModel<string>> RegistGymMembers(RegisterGymMemberDTO user);
         Task<ResponseModel<string>> Login(LoginDTO login);
+        Task<ResponseModel<string>> VerifyUser(string token);
+        Task<ResponseModel<string>> RegenerateToken(string mail);
+        
         
     }
 }

@@ -1,4 +1,5 @@
 ﻿using GymMembershipAPI.Domain;
+using GymMembershipAPI.DTO.GymMember;
 using GymMembershipAPI.DTO.GymOwner;
 using GymMembershipAPI.Service;
 
@@ -10,7 +11,7 @@ namespace GymMembershipAPI.DataAccess.Interface
         Task <ResponseModel<string>> DeleteMember(Guid memberId);
         Task <ResponseModel<string>> UpdateMember(GymMemberUpdateDTO member);
         Task <ResponseModel<string>> GetMember(Guid memberId);
-        Task <ResponseModel<string>> DepositMoney(DepositMoneyDTO deposit);
+        Task <ResponseModel<string>> DepositMoney(FundAccountDTO deposit);
         Task<ResponseModel<string>> CheckAccountBalance(Guid Id);
         Task<ResponseModel<string>> MemeberSubscriptionDetails(Guid id);
         Task<ResponseModel<string>> CheckMemberAcctBalance(Guid memeberId);

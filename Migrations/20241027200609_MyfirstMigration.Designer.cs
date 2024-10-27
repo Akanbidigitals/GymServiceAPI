@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GymMembershipAPI.Migrations
 {
     [DbContext(typeof(ApplicationContext))]
-    [Migration("20241008201238_MyFirstMigration")]
-    partial class MyFirstMigration
+    [Migration("20241027200609_MyfirstMigration")]
+    partial class MyfirstMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,12 +38,12 @@ namespace GymMembershipAPI.Migrations
                     b.Property<Guid>("GymownerId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("MonthValidity")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SubscriptionEnd")
+                        .HasColumnType("datetime2");
 
                     b.Property<DateTime>("SubscriptionStart")
                         .HasColumnType("datetime2");
@@ -116,11 +116,12 @@ namespace GymMembershipAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("PostedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<Guid>("PosterById")
-                        .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -149,25 +150,22 @@ namespace GymMembershipAPI.Migrations
                     b.Property<Guid?>("GymMemberId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("GymOwnerId")
+                    b.Property<Guid>("GymOwerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("GymSuperAdminId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("PaymentReference")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaymentType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("GymMemberId");
 
-                    b.HasIndex("GymOwnerId");
+                    b.HasIndex("GymOwerId");
+
+                    b.HasIndex("GymSuperAdminId");
 
                     b.ToTable("Payment");
                 });
@@ -292,13 +290,19 @@ namespace GymMembershipAPI.Migrations
 
                     b.HasOne("GymMembershipAPI.Domain.GymOwner", "GymOwner")
                         .WithMany("Payments")
-                        .HasForeignKey("GymOwnerId")
+                        .HasForeignKey("GymOwerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("GymMembershipAPI.Domain.GymSuperAdmin", "GymSuperAdmin")
+                        .WithMany()
+                        .HasForeignKey("GymSuperAdminId");
 
                     b.Navigation("GymMember");
 
                     b.Navigation("GymOwner");
+
+                    b.Navigation("GymSuperAdmin");
                 });
 
             modelBuilder.Entity("GymMembershipAPI.Domain.UserRole", b =>

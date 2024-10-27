@@ -6,6 +6,7 @@ using GymMembershipAPI.DTO.Mail;
 using GymMembershipAPI.DTO.Register_Login;
 using GymMembershipAPI.Mail;
 using GymMembershipAPI.Service;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -72,7 +73,53 @@ namespace GymMembershipAPI.DataAccess.Repository
                 throw new Exception(ex.Message);
             }
         }
-        
+
+        public async Task<ResponseModel<string>> RegenerateToken(string email)
+        {
+            var response = new ResponseModel<string>();
+            try
+            {
+                var user = await _ctx.Users.FirstOrDefaultAsync(x => x.Email == email);
+                if(user == null)
+                {
+                    response = response.FailedResult("User does not exist");
+                }else if(user.Isverified == true)
+                {
+                    response = response.FailedResult("You account is already verified");
+                }
+                else if (DateTime.Now > DateTime.Parse(user.TokenExpiration))
+                {
+                    user.TokenExpiration = "";
+                    user.VerificationToken = "";
+                    user.VerifiedAt = "Unverified";
+
+                    _ctx.Users.Update(user);
+                    await _ctx.SaveChangesAsync();
+                    response = response.FailedResult("Token expired");
+                }
+                else
+                {
+                    user.Isverified = true;
+                    user.VerifiedAt = DateTime.UtcNow.ToString("g");
+                    user.VerificationToken = "";
+                    user.TokenExpiration = "";
+                    user.Roles = user.Roles;
+
+                    _ctx.Users.Update(user);
+                    await _ctx.SaveChangesAsync();
+                    response = response.SuccessResult("Verification successfull");
+
+
+                }
+
+            }
+            catch( Exception ex )
+            {
+                response = response.FailedResult(ex.Message);
+            }
+            return response;
+        }
+
         public async Task<ResponseModel<string>> RegistGymMembers(RegisterGymMemberDTO user)
         {
             var response = new ResponseModel<string>();
@@ -251,7 +298,7 @@ namespace GymMembershipAPI.DataAccess.Repository
                     {
                         var newUser = new User()
                         {
-                            Email = newsuperadmin.Email,
+                            Email = user.Email,
                             AccountNumber = Utils.GenerateAcctNumber(),
                             AccountBalance = 0,
                             PasswordHash = Utils.HashPassword(user.Password),
@@ -305,6 +352,47 @@ namespace GymMembershipAPI.DataAccess.Repository
             {
                 throw new Exception(ex.Message);
             }
+        }
+
+        public async Task<ResponseModel<string>> VerifyUser(string token)
+        {
+            var response = new ResponseModel<string>();
+            try
+            {
+                var user = await _ctx.Users.FirstOrDefaultAsync(X => X.VerificationToken == token);
+                if(user == null)
+                {
+                    response = response.FailedResult("Invalid token");
+                }else if( DateTime.Now > DateTime.Parse(user.TokenExpiration))
+                {
+                    user.TokenExpiration = "";
+                    user.VerificationToken = "";
+                    user.VerifiedAt = "Unverified";
+
+                    _ctx.Users.Update(user);
+                    await _ctx.SaveChangesAsync();
+                    response = response.FailedResult("Token expired");
+                }
+                else
+                {
+                    user.Isverified = true;
+                    user.VerifiedAt = DateTime.UtcNow.ToString("g");
+                    user.VerificationToken = "";
+                    user.TokenExpiration = "";
+                    user.Roles = user.Roles;
+
+                    _ctx.Users.Update(user);
+                    await _ctx.SaveChangesAsync();
+                    response = response.SuccessResult("Verification successfull");
+                   
+                   
+                }
+
+            }catch(Exception ex)
+            {
+                response = response.FailedResult(ex.Message);
+            }
+            return response;
         }
     }
 }
