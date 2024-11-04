@@ -7,7 +7,7 @@
         public string Password { get; set; }
         public string ConfirmPassword { get; set; }
 
-        public decimal MonthlyPercentage { get; set; } 
+       
 
     }
 }

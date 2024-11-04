@@ -15,7 +15,9 @@ namespace GymMembershipAPI.Domain
 
         [Column(TypeName = "decimal(8,2)")]
         public decimal MonthlyEarnings { get; set; } = 0;
-        
+        [ForeignKey(nameof(GymSuperAdmin))]
+        public Guid SuperAdminId {  get; set; }
+        public GymSuperAdmin GymSuperAdmin { get; set; }
         public List<GymMember>? GymMembers { get; set; }
         public List<Payment>? Payments { get; set; }
 

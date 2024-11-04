@@ -17,7 +17,8 @@ namespace GymMembershipAPI.Controllers
             _ctx = ctx;
         }
 
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpPost("RegisterGymMember")]
         public async Task<IActionResult> RegisterMember(RegisterGymMemberDTO _register)
         {
@@ -31,8 +32,9 @@ namespace GymMembershipAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [Authorize(Roles = "GymOwner")]
 
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpPost("MakePaymentToSuperAdmin")]
         public async Task<IActionResult> PaySuperAdmin(MakePaymetToSuperAdminDTO _pay)
         {
@@ -46,8 +48,9 @@ namespace GymMembershipAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [Authorize(Roles = "GymOwner")]
+        
 
+        [Authorize(Roles ="GymOwner")]
         [HttpPut("UpdateGymMemeber")]
         public async Task <IActionResult> UpdateMember(GymMemberUpdateDTO _update)
         {
@@ -61,8 +64,9 @@ namespace GymMembershipAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [Authorize(Roles = "GymOwner")]
+        
 
+        [Authorize(Roles ="GymOwner")]
         [HttpDelete("DeleteGymMember")]
         public async Task<IActionResult> DeleteGymMemeber (Guid id)
         {
@@ -76,7 +80,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpGet("GetAllGymMemebers")]
         public async Task<IActionResult> GetAllGymMember()
         {
@@ -90,7 +95,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpGet("GetMember")]
         public async Task<IActionResult> GetMember(Guid id)
         {
@@ -105,7 +111,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpGet("CheckBalance")]
         public async Task<IActionResult> CheckBalance (Guid id)
         {
@@ -119,7 +126,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
         
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpGet("CheckMemberBalance")]
         public async Task<IActionResult> CheckMemberBalance (Guid id)
         {
@@ -133,7 +141,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpPost("DepositMoney")]
         public async Task<IActionResult> DepositMoney(FundAccountDTO fundAccountDTO)
         {
@@ -147,7 +156,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpGet("CheckMemeberSubscriptionDetails")]
         public async Task<IActionResult> CheckSubscription(Guid id)
         {
@@ -161,7 +171,8 @@ namespace GymMembershipAPI.Controllers
                 return BadRequest(ex.Message) ;
             }
         }
-        [Authorize(Roles = "GymOwner")]
+        
+        [Authorize(Roles ="GymOwner")]
         [HttpPost("PostHealthyTips")]
         public async Task<IActionResult>PostHealthyTips(PostHealthyTipsDTO _post)
         {

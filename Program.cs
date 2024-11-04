@@ -27,6 +27,7 @@ builder.Services.AddTransient<IEmailService,EmailServiceRepository>(); //Mail D.
 builder.Services.AddScoped<IRegister_Login, Register_LoginRepository>(); //Logs D.I
 builder.Services.AddScoped<ISuperAdminRepository,SuperAdminRepository>();// SuperAdmin D.I
 builder.Services.AddScoped<IGymOwnerRepository, GymOwnerRepository>(); // GymOwner D.I
+builder.Services.AddScoped<IGymMemberRepository, GymMemberRepository>(); // GymOwner D.I
 
 
 builder.Services.Configure<Setup>(builder.Configuration.GetSection("Setup"));
@@ -53,17 +54,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc(name: "v1", new OpenApiInfo { Title = "GymAPIUser", Version = "v1" });
-    options.AddSecurityDefinition(name: "Bearer", new OpenApiSecurityScheme
-    {
-        In = ParameterLocation.Header,
-        Description = "Enter a valid token",
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        BearerFormat = "JWT",
-        Scheme = "Bearer"
-    });
+options.AddSecurityDefinition(name: "Bearer", new OpenApiSecurityScheme
+{
+    In = ParameterLocation.Header,
+    Description = "Enter a valid token",
+    Name = "Authorization",
+    Type = SecuritySchemeType.Http,
+    BearerFormat = "JWT",
+    Scheme = "Bearer"
+});
 
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+options.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
             new OpenApiSecurityScheme

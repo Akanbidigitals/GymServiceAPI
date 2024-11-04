@@ -18,7 +18,7 @@ namespace GymMembershipAPI.Domain
         public DateTime SubscriptionEnd { get; set; } 
 
         [ForeignKey(nameof(GymOwner))]
-        public Guid GymownerId { get; set; }
+        public Guid GymOwnerId { get; set; }
         public GymOwner GymOwner { get; set; }
 
         public List<Payment> Payments { get; set; }

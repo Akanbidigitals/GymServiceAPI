@@ -38,9 +38,6 @@ namespace GymMembershipAPI.DataAccess.Repository
                 if(user == null || !verifypass)
                 {
                     response = response.FailedResult("Email or password is incorrect, pls try again");
-                }else if (!user.Isverified)
-                {
-                    response = response.FailedResult("Account not verified,Pls verify your accounr");
                 }
                 else
                 {
@@ -125,81 +122,86 @@ namespace GymMembershipAPI.DataAccess.Repository
             var response = new ResponseModel<string>();
             try
             {
-                var newGymMember = await _ctx.Members.AnyAsync(x => x.Email == user.Email);
-                var gymOwner = await _ctx.GymOwner.FirstAsync();
-                
-                if(gymOwner.Id == null)
+                var checkuser = await _ctx.Users.AnyAsync(x => x.Email == user.Email);
+                if (checkuser)
                 {
-                    response = response.FailedResult("Gym OwnerId is invalid");
-                }
-                if (newGymMember)
-                {
-                    response = response.FailedResult("User already exist,pls login");
+                    response = response.FailedResult("User already exist");
                 }
                 else
                 {
-                    var addnewGymMember = new GymMember()
+                    var adduser = new User()
                     {
-                        GymownerId = gymOwner.Id,
                         Email = user.Email,
-                        GymOwner = gymOwner,
-                       
+                        Name = user.Name,
+                        PasswordHash = Utils.HashPassword(user.Password),
+                        VerificationToken = Utils.CreateVerificationToken().Substring(0, 5),
+                        VerifiedAt = "Unverified",
+                        AccountBalance = 0,
+                        AccountNumber = Utils.GenerateAcctNumber(),
 
                     };
-                    await _ctx.Members.AddAsync(addnewGymMember);
-                    var result = await _ctx.SaveChangesAsync();
-                    if(result > 0)
+
+                    await _ctx.Users.AddAsync(adduser);
+                    await _ctx.SaveChangesAsync();
+
+                    var role = await _ctx.Roles.FirstOrDefaultAsync(x => x.Id == 3);
+
+                    var userrole = new UserRole()
                     {
-                        var adduser = new User()
+                        RoleId = role.Id,
+                        Role = role,
+                        User = adduser,
+                        UserId = adduser.Id
+
+                    };
+
+                    adduser.Roles.Add(userrole);
+                    var res = await _ctx.SaveChangesAsync();
+                    if (res > 0)
+                    {
+                        var checkGymOwner = await _ctx.GymOwner.FirstOrDefaultAsync(x=>x.Id == user.GymOwnerId);
+                        if(checkGymOwner is null)
                         {
-                            Email = addnewGymMember.Email,
-                            PasswordHash = Utils.HashPassword(user.Password),
-                            VerificationToken = Utils.CreateVerificationToken().Substring(0,5),
-                            VerifiedAt = "Unverified",
-                            TokenExpiration = DateTime.Now.AddMinutes(20).ToString()
-
-                        };
-
-                        await _ctx.Users.AddAsync(adduser);
-                        var userResult = await _ctx.SaveChangesAsync();
-
-                        var assignmemberRole = await _ctx.Roles.FirstOrDefaultAsync(x => x.Id == 3);
-
-                        var memberUserRole = new UserRole()
-                        {
-                            RoleId = assignmemberRole.Id,
-                            Role = assignmemberRole,
-                            UserId = adduser.Id,
-                            User = adduser
-                        };
-                        adduser.Roles.Add(memberUserRole);
-                       var res = await _ctx.SaveChangesAsync();
-                        //Send mail
-                        if(res > 0)
-                        {
-                            var bodyMsg = $"<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n    <meta charset=\"UTF-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    <title>Email Verification</title>\r\n</head>\r\n<body style=\"margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333;\">\r\n    <table align=\"center\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #ddd;\">\r\n        <tr>\r\n            <td align=\"center\" style=\"padding: 20px 0;\">\r\n                <h2 style=\"color: #333; margin: 0;\">Email Verification</h2>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td style=\"padding: 10px 20px; color: #555; font-size: 16px; line-height: 1.5; text-align: center;\">\r\n                <p>Thank you {adduser.Name} for signing up! Please use the OTP code below to verify your email address. This code will expire in 5 minutes : {DateTime.Now.AddMinutes(5).ToString("g")}.</p>\r\n                <p style=\"font-size: 18px; font-weight: bold; color: #007bff; margin: 20px 0; text-align: center;\">\r\n                    <span style=\"background-color: #f0f0f0; padding: 10px 20px; border: 1px solid #ddd; border-radius: 5px; display: inline-block;\">{adduser.VerificationToken}</span>\r\n                </p>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td style=\"padding: 20px 0; text-align: center; color: #777; font-size: 12px;\">\r\n                <p>If you did not request this, please ignore this email.</p>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n</body>\r\n</html>\r\n";
-
-                            var sendMail = new MailRequest()
-                            {
-                                Reciever = user.Email,
-                                Subject = "Verify your email",
-                                Content = adduser.VerificationToken
-                            };
-                            
-                            await _emailService.SendEmailAsync(sendMail);
-                            response = response.SuccessResult("Account created succesffully, pls kindly verify your email");
-
+                            response = response.FailedResult("Gym Owner Id does not exist");
                         }
+                        var addGymMemeber = new GymMember()
+                        {
+                            Email = adduser.Email,
+                            Name = adduser.Name,
+                            GymOwnerId = user.GymOwnerId,
+                            GymOwner = checkGymOwner!
+
+                    };
                        
+
+                        await _ctx.Members.AddAsync(addGymMemeber);
+                        var savedAdmin = await _ctx.SaveChangesAsync();
+                        response = response.SuccessResult("Account created successfully");
+
+
+                        //if (savedAdmin > 0)
+                        //{
+
+                        //    var sendmail = new MailRequest()
+                        //    {
+                        //        Reciever = addsuperadmin.Email,
+                        //        Subject = "verify your email",
+                        //        Content = adduser.VerificationToken
+                        //    };
+                        //    await _emailService.SendEmailAsync(sendmail);
+                        //    response = response.SuccessResult("account created succesffully, pls kindly verify your email");
+
+
+                        //}
                     }
                 }
 
-                return response;
             }
             catch (Exception ex)
             {
                 throw new Exception(ex.Message);
             }
+                return response;
         }
 
         public async Task<ResponseModel<string>> RegistGymOwners(RegisterGymOwner user)
@@ -207,152 +209,174 @@ namespace GymMembershipAPI.DataAccess.Repository
             var response = new ResponseModel<string>();
             try
             {
-                var gymowner = await _ctx.GymOwner.AnyAsync(x => x.Email == user.Email);
-                if (gymowner)
+                var checkuser = await _ctx.Users.AnyAsync(x => x.Email == user.Email);
+                if (checkuser)
                 {
-                    response = response.FailedResult("Email already exist, pls login");
-                }
-                var addGymMember = new GymOwner()
-                {
-                    Email = user.Email,
-                    Name = user.Name,
-                };
-
-                await _ctx.GymOwner.AddAsync(addGymMember);
-                await _ctx.SaveChangesAsync();
-
-                var addUser = new User()
-                {
-                    Email = user.Email,
-                    PasswordHash = Utils.HashPassword(user.Password),
-                    VerificationToken = Utils.CreateVerificationToken().Substring(0, 5),
-                    VerifiedAt = "Unverified",
-                    AccountBalance = 0,
-                    AccountNumber = Utils.GenerateAcctNumber(),
-
-                };
-                await _ctx.Users.AddAsync(addUser);
-                await _ctx.SaveChangesAsync();
-
-                var ownerRole = await _ctx.Roles.FirstOrDefaultAsync(x => x.Id == 3);
-
-                var ownerUserRole = new UserRole()
-                {
-                    RoleId = ownerRole.Id,
-                    Role = ownerRole,
-                    UserId = addUser.Id,
-                    User = addUser
-                };
-
-                addUser.Roles.Add(ownerUserRole);
-                var res = await _ctx.SaveChangesAsync();
-                if(res > 0)
-
-                {
-                    var bodyMsg = $"<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n    <meta charset=\"UTF-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    <title>Email Verification</title>\r\n</head>\r\n<body style=\"margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333;\">\r\n    <table align=\"center\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #ddd;\">\r\n        <tr>\r\n            <td align=\"center\" style=\"padding: 20px 0;\">\r\n                <h2 style=\"color: #333; margin: 0;\">Email Verification</h2>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td style=\"padding: 10px 20px; color: #555; font-size: 16px; line-height: 1.5; text-align: center;\">\r\n                <p>Thank you {addUser.Name} for signing up! Please use the OTP code below to verify your email address. This code will expire in 5 minutes : {DateTime.Now.AddMinutes(5).ToString("g")}.</p>\r\n                <p style=\"font-size: 18px; font-weight: bold; color: #007bff; margin: 20px 0; text-align: center;\">\r\n                    <span style=\"background-color: #f0f0f0; padding: 10px 20px; border: 1px solid #ddd; border-radius: 5px; display: inline-block;\">{addUser.VerificationToken}</span>\r\n                </p>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td style=\"padding: 20px 0; text-align: center; color: #777; font-size: 12px;\">\r\n                <p>If you did not request this, please ignore this email.</p>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n</body>\r\n</html>\r\n";
-
-                    var sendMail = new MailRequest
-                    {
-                        Reciever = user.Email,
-                        Subject = "Verify your Email",
-                        Content = bodyMsg,
-
-                    };
-
-                    await _emailService.SendEmailAsync(sendMail);
-                    response = response.SuccessResult("Account successfull, pls check youe mail to verify");
-                }
-                return response;
-
-            }catch(Exception ex)
-            {
-                throw new Exception(ex.Message);
-            }
-        }
-
-        public async Task<ResponseModel<string>> RegistSuperAdmin(RegisterSuperAdminDTO user)
-        {
-            var response = new ResponseModel<string>();
-
-            try
-            {
-                var Newuser = await _ctx.GymSuperAdmins.AnyAsync(x=>x.Email == user.Email);
-                if(Newuser)
-                {
-                    response = response.FailedResult("Email already exist");
+                    response = response.FailedResult("User already exist");
                 }
                 else
                 {
-                    var newsuperadmin = new GymSuperAdmin()
+                    var adduser = new User()
                     {
                         Email = user.Email,
                         Name = user.Name,
-                        MonthlyPercentage = 0.20m
-                        
+                        PasswordHash = Utils.HashPassword(user.Password),
+                        VerificationToken = Utils.CreateVerificationToken().Substring(0, 5),
+                        VerifiedAt = "Unverified",
+                        AccountBalance = 0,
+                        AccountNumber = Utils.GenerateAcctNumber(),
 
                     };
 
-                    await _ctx.GymSuperAdmins.AddAsync(newsuperadmin);
+                    await _ctx.Users.AddAsync(adduser);
+                    await _ctx.SaveChangesAsync();
+
+                    var role = await _ctx.Roles.FirstOrDefaultAsync(x => x.Id == 2);
+
+                    var userrole = new UserRole()
+                    {
+                        RoleId = role.Id,
+                        Role = role,
+                        User = adduser,
+                        UserId = adduser.Id
+
+                    };
+
+                    adduser.Roles.Add(userrole);
                     var res = await _ctx.SaveChangesAsync();
-                    if(res > 0)
+                    if (res > 0)
                     {
-                        var newUser = new User()
+                        var checkSuperAdmin = await _ctx.GymSuperAdmins.FirstOrDefaultAsync(x => x.Id == user.SuperAdminId);
+                        if(checkSuperAdmin is null)
                         {
-                            Email = user.Email,
-                            AccountNumber = Utils.GenerateAcctNumber(),
-                            AccountBalance = 0,
-                            PasswordHash = Utils.HashPassword(user.Password),
-                            VerificationToken = Utils.CreateVerificationToken().Substring(0,5),
-                            VerifiedAt = "Unverified",
-                            TokenExpiration = DateTime.Now.AddMinutes(10).ToString()
+                            response = response.FailedResult("SuperAdmin Id does not exist");
+                        }
+                        var addGymOwner = new GymOwner()
+                        {
+                            Email = adduser.Email,
+                            Name = adduser.Name,
+                            SuperAdminId = checkSuperAdmin.Id,
+                            GymSuperAdmin = checkSuperAdmin
+                            
                         };
-                        await _ctx.Users.AddAsync(newUser);
+
+                        await _ctx.GymOwner.AddAsync(addGymOwner)   ;
                         await _ctx.SaveChangesAsync();
+                        response = response.SuccessResult("Account created successfully");
 
-                        var role = await _ctx.Roles.FirstOrDefaultAsync(x => x.Id == 1);
-                        var userRole = new UserRole
-                        {
-                            RoleId = role.Id,
-                            Role = role,
-                            UserId = newUser.Id,
-                            User = newUser
 
-                        };
-                        
-                         newUser.Roles.Add(userRole);
-                      var outcome =   await _ctx.SaveChangesAsync();
-                        if(outcome > 0)
-                        {
-                            var bodyMsg = $"<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n    <meta charset=\"UTF-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    <title>Email Verification</title>\r\n</head>\r\n<body style=\"margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4; color: #333;\">\r\n    <table align=\"center\" width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\" style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border: 1px solid #ddd;\">\r\n        <tr>\r\n            <td align=\"center\" style=\"padding: 20px 0;\">\r\n                <h2 style=\"color: #333; margin: 0;\">Email Verification</h2>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td style=\"padding: 10px 20px; color: #555; font-size: 16px; line-height: 1.5; text-align: center;\">\r\n                <p>Thank you {newUser.Name} for signing up! Please use the OTP code below to verify your email address. This code will expire in 5 minutes : {DateTime.Now.AddMinutes(5).ToString("g")}.</p>\r\n                <p style=\"font-size: 18px; font-weight: bold; color: #007bff; margin: 20px 0; text-align: center;\">\r\n                    <span style=\"background-color: #f0f0f0; padding: 10px 20px; border: 1px solid #ddd; border-radius: 5px; display: inline-block;\">{newUser.VerificationToken}</span>\r\n                </p>\r\n            </td>\r\n        </tr>\r\n        <tr>\r\n            <td style=\"padding: 20px 0; text-align: center; color: #777; font-size: 12px;\">\r\n                <p>If you did not request this, please ignore this email.</p>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n</body>\r\n</html>\r\n";
+                        //if (savedAdmin > 0)
+                        //{
 
-                            var sendMail = new MailRequest
-                            {
-                                Reciever = newUser.Email,
-                                Subject ="Verify your email",
-                                Content = bodyMsg
-                            };
-                            var mail = _emailService.SendEmailAsync(sendMail);
-                            response = response.SuccessResult("Account created succesffully, pls kindly verify your email");
+                        //    var sendmail = new MailRequest()
+                        //    {
+                        //        Reciever = addsuperadmin.Email,
+                        //        Subject = "verify your email",
+                        //        Content = adduser.VerificationToken
+                        //    };
+                        //    await _emailService.SendEmailAsync(sendmail);
+                        //    response = response.SuccessResult("account created succesffully, pls kindly verify your email");
 
-                        }
-                        else
-                        {
-                            response = response.FailedResult("Unable to send mail, issue saving to Db");
-                        }
 
-                    }
-                    else
-                    {
-                        response = response.FailedResult("Unable to save to database");
+                        //}
                     }
                 }
-                return response;
+            }
+            catch(Exception ex)
+            {
+                response = response.FailedResult(ex.Message);
+            }
+            return response;
+        }
+       
 
+        public async Task<ResponseModel<string>> RegistSuperAdmin(RegisterSuperAdminDTO user)
+        {
+
+            var response = new ResponseModel<string>();
+            try
+            {
+                var checkuser = await _ctx.Users.AnyAsync(x => x.Email == user.Email);
+                if(checkuser)
+                {
+                    response = response.FailedResult("User already exist");
+                }
+                else
+                {
+                    var adduser = new User()
+                    {
+                        Email = user.Email,
+                        Name = user.Name,
+                        PasswordHash = Utils.HashPassword(user.Password),
+                        VerificationToken = Utils.CreateVerificationToken().Substring(0, 5),
+                        VerifiedAt = "Unverified",
+                        AccountBalance = 0,
+                        AccountNumber = Utils.GenerateAcctNumber(),
+
+                    };
+
+                    await _ctx.Users.AddAsync(adduser);
+                     await _ctx.SaveChangesAsync();
+
+                    var role = await _ctx.Roles.FirstOrDefaultAsync(x=>x.Id == 1);
+
+                    var userrole = new UserRole()
+                    {
+                        RoleId = role.Id,
+                        Role = role,
+                        User = adduser,
+                        UserId = adduser.Id
+
+                    };
+
+                    adduser.Roles.Add(userrole);
+                    var res = await _ctx.SaveChangesAsync();
+                    if (res > 0)
+                    {
+                        var addsuperadmin = new GymSuperAdmin()
+                        {
+                            Email = adduser.Email,
+                            Name = adduser.Name,
+                            MonthlyPercentage = 0.20m
+                        };
+
+                        await _ctx.GymSuperAdmins.AddAsync(addsuperadmin);
+                        var savedAdmin = await _ctx.SaveChangesAsync();
+
+                        response = response.SuccessResult("Account created successfully");
+
+                        //SMTP Server is down
+                        //if(savedAdmin > 0)
+                        //{
+                            
+                        //    var sendmail = new MailRequest()
+                        //    {
+                        //        Reciever = addsuperadmin.Email,
+                        //        Subject = "verify your email",
+                        //        Content = adduser.VerificationToken
+                        //    };
+                        //      await _emailService.SendEmailAsync(sendmail);
+                        //    response = response.SuccessResult("account created succesffully, pls kindly verify your email");
+
+
+                        //}
+                    }
+                }
             }catch( Exception ex )
             {
-                throw new Exception(ex.Message);
+                response = response.FailedResult($"{ex.Message}");
             }
+            return response;
         }
+     
+                       
+
+                            
+                            
+                             
+                           
+
+                 
 
         public async Task<ResponseModel<string>> VerifyUser(string token)
         {

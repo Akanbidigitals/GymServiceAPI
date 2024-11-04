@@ -17,6 +17,7 @@ namespace GymMembershipAPI.Controllers
             _ctx = ctx;
             _Login = login;
         }
+
         [HttpPost("RegisterSuperAdmin")]
 
         public async Task<IActionResult> RegisterSuperAdmin(RegisterSuperAdminDTO register)
@@ -30,8 +31,9 @@ namespace GymMembershipAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
-        [Authorize(Roles = "SuperAdmin")]
         
+        
+        [Authorize(Roles ="SuperAdmin")]
         [HttpPost("RegisterGymOwner")]
 
         public async Task<IActionResult> RegisterGymOwner(RegisterGymOwner register)
@@ -46,7 +48,7 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [HttpPost("ValidateTokenToMail")]
+       
         public async Task<IActionResult> ValidateToken(string token)
         {
             try
@@ -60,6 +62,7 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
+        [Authorize(Roles ="SuperAdmin")]
         [HttpPost("RegenerateToken")]
         public async Task<IActionResult> RegenerateToken(string mail)
         {
@@ -74,8 +77,9 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "SuperAdmin")]
-        [HttpGet("GetListOfGymMembers")]
+        
+        [Authorize(Roles ="SuperAdmin")]
+        [HttpGet("GetListOfGymOwner")]
 
         public async Task<IActionResult> GetListOfGymOwner()
         {
@@ -91,7 +95,8 @@ namespace GymMembershipAPI.Controllers
         }
 
 
-        [Authorize(Roles = "SuperAdmin")]
+        
+        [Authorize(Roles ="SuperAdmin")]
         [HttpGet("GetPaymentHistoryOfGymOwner")]
         
         public async Task<IActionResult>GetHistory(Guid id)
@@ -108,7 +113,8 @@ namespace GymMembershipAPI.Controllers
         }
 
 
-        [Authorize(Roles = "SuperAdmin")]
+        
+        [Authorize(Roles ="SuperAdmin")]
         [HttpGet("GetTheCountOfGymOwner")]
         public async Task<IActionResult> GetGymOwnerCount()
         {
@@ -122,7 +128,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        
+        [Authorize(Roles ="SuperAdmin")]
         [HttpPut("UpdateGymOwner")]
         public async Task<IActionResult> UpdateGymOwner(UpdateGymOwnerDTO _dto)
         {
@@ -137,7 +144,8 @@ namespace GymMembershipAPI.Controllers
             }
         }
 
-        [Authorize(Roles = "SuperAdmin")]
+        
+        [Authorize(Roles ="SuperAdmin")]
         [HttpDelete("DeleteGymOwner")]
         public async Task <IActionResult>DeleteGymOwner(Guid Id)
         {
@@ -147,6 +155,33 @@ namespace GymMembershipAPI.Controllers
                 return Ok(res);
 
             }catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpDelete("DeleteSuperAdmin")]
+        public async Task<IActionResult>DeleteSuperAdmin(Guid id)
+        {
+            try
+            {
+                var res = await _ctx.DeleteSuperAdmin(id);
+                return Ok(res);
+
+            }catch(Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+        [HttpPost("LoginUser")]
+        public async Task<IActionResult> Login(LoginDTO _login)
+        {
+            try
+            {
+                var res = await _Login.Login(_login);
+                return Ok(res);
+            }
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }

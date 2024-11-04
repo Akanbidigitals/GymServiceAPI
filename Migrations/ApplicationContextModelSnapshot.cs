@@ -32,7 +32,7 @@ namespace GymMembershipAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid>("GymownerId")
+                    b.Property<Guid>("GymOwnerId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("Name")
@@ -47,7 +47,7 @@ namespace GymMembershipAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("GymownerId");
+                    b.HasIndex("GymOwnerId");
 
                     b.ToTable("Members");
                 });
@@ -62,9 +62,6 @@ namespace GymMembershipAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<Guid?>("GymSuperAdminId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<decimal>("MonthlyEarnings")
                         .HasColumnType("decimal(8,2)");
 
@@ -72,9 +69,12 @@ namespace GymMembershipAPI.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("SuperAdminId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("GymSuperAdminId");
+                    b.HasIndex("SuperAdminId");
 
                     b.ToTable("GymOwner");
                 });
@@ -265,7 +265,7 @@ namespace GymMembershipAPI.Migrations
                 {
                     b.HasOne("GymMembershipAPI.Domain.GymOwner", "GymOwner")
                         .WithMany("GymMembers")
-                        .HasForeignKey("GymownerId")
+                        .HasForeignKey("GymOwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -274,9 +274,13 @@ namespace GymMembershipAPI.Migrations
 
             modelBuilder.Entity("GymMembershipAPI.Domain.GymOwner", b =>
                 {
-                    b.HasOne("GymMembershipAPI.Domain.GymSuperAdmin", null)
+                    b.HasOne("GymMembershipAPI.Domain.GymSuperAdmin", "GymSuperAdmin")
                         .WithMany("Owners")
-                        .HasForeignKey("GymSuperAdminId");
+                        .HasForeignKey("SuperAdminId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GymSuperAdmin");
                 });
 
             modelBuilder.Entity("GymMembershipAPI.Domain.Payment", b =>

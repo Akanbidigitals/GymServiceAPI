@@ -12,6 +12,7 @@ namespace GymMembershipAPI.DataAccess.Interface
         Task<ResponseModel<string>> GetNumbersOfgymOwner();
         Task <List<Payment>> VeiwAllPaymentsbyGymOwner(Guid id);
         Task<ResponseModel<string>> GetAccountNumber( Guid id);
+        Task<ResponseModel<string>> DeleteSuperAdmin(Guid id);
         
     }
 }

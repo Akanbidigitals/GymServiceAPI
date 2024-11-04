@@ -38,6 +38,32 @@ namespace GymMembershipAPI.DataAccess.Repository
             return response;
         }
 
+        public async Task<ResponseModel<string>> DeleteSuperAdmin(Guid id)
+        {
+            var response = new ResponseModel<string>();
+            try
+            {
+                var checkId = await _ctx.GymSuperAdmins.FirstOrDefaultAsync(x => x.Id == id);
+                if (checkId == null)
+                {
+                    response = response.FailedResult("Id does not exist");
+                }
+                var checkUser = await _ctx.Users.FirstOrDefaultAsync(x => x.Email == checkId.Email);
+
+                _ctx.GymSuperAdmins.Remove(checkId!);
+                _ctx.Users.Remove(checkUser!);
+                await _ctx.SaveChangesAsync();
+
+                response = response.SuccessResult("SuperAdmin deleted Successfully");
+
+
+            }catch(Exception ex)
+            {
+                response = response.FailedResult($"{ex.Message}");
+            }
+            return response;
+        }
+
         public async Task<ResponseModel<string>> GetAccountNumber( Guid id)
         {
             var response = new ResponseModel<string>();

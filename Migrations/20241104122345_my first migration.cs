@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace GymMembershipAPI.Migrations
 {
     /// <inheritdoc />
-    public partial class MyfirstMigration : Migration
+    public partial class myfirstmigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -84,16 +84,17 @@ namespace GymMembershipAPI.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     MonthlyEarnings = table.Column<decimal>(type: "decimal(8,2)", nullable: false),
-                    GymSuperAdminId = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                    SuperAdminId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_GymOwner", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_GymOwner_GymSuperAdmins_GymSuperAdminId",
-                        column: x => x.GymSuperAdminId,
+                        name: "FK_GymOwner_GymSuperAdmins_SuperAdminId",
+                        column: x => x.SuperAdminId,
                         principalTable: "GymSuperAdmins",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -129,14 +130,14 @@ namespace GymMembershipAPI.Migrations
                     Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     SubscriptionStart = table.Column<DateTime>(type: "datetime2", nullable: false),
                     SubscriptionEnd = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    GymownerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    GymOwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Members", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Members_GymOwner_GymownerId",
-                        column: x => x.GymownerId,
+                        name: "FK_Members_GymOwner_GymOwnerId",
+                        column: x => x.GymOwnerId,
                         principalTable: "GymOwner",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -187,14 +188,14 @@ namespace GymMembershipAPI.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_GymOwner_GymSuperAdminId",
+                name: "IX_GymOwner_SuperAdminId",
                 table: "GymOwner",
-                column: "GymSuperAdminId");
+                column: "SuperAdminId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Members_GymownerId",
+                name: "IX_Members_GymOwnerId",
                 table: "Members",
-                column: "GymownerId");
+                column: "GymOwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Payment_GymMemberId",
